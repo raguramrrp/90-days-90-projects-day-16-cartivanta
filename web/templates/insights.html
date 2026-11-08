@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Business Insights & Planning</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Sales trends, customer buying habits, expected demand, and discount planning in Indian Rupee (₹)</p>
+        </div>
+    </div>
+
+    <!-- Executive Historical KPIs (INR ₹) -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Net Sales</span>
+            <div class="text-xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(historical_kpis.net_revenue) }}</div>
+            <p class="text-[10px] text-slate-400 mt-0.5">Gross minus returns</p>
+        </div>
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Gross Sales</span>
+            <div class="text-xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(historical_kpis.gross_sales) }}</div>
+            <p class="text-[10px] text-slate-400 mt-0.5">Before returns</p>
+        </div>
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Total Orders</span>
+            <div class="text-xl font-bold text-slate-900 mt-1">{{ "{:,}".format(historical_kpis.total_orders) }}</div>
+            <p class="text-[10px] text-slate-400 mt-0.5">Distinct invoices</p>
+        </div>
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Avg Bill Value</span>
+            <div class="text-xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(historical_kpis.average_order_value) }}</div>
+            <p class="text-[10px] text-slate-400 mt-0.5">Per customer bill</p>
+        </div>
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Estimated Profit</span>
+            <div class="text-xl font-bold text-teal-700 mt-1">₹{{ "{:,.2f}".format(historical_kpis.estimated_gross_profit) }}</div>
+            <p class="text-[10px] text-teal-600 font-semibold mt-0.5">{{ historical_kpis.estimated_gross_margin_pct }}% Margin</p>
+        </div>
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Return Rate</span>
+            <div class="text-xl font-bold text-rose-600 mt-1">{{ historical_kpis.return_rate_pct }}%</div>
+            <p class="text-[10px] text-rose-500 mt-0.5">₹{{ "{:,.2f}".format(historical_kpis.returns_value) }}</p>
+        </div>
+    </div>
+
+    <!-- Monthly Revenue Trajectory & Category Share -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 card p-5">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">24-Month Sales Pattern (₹)</h3>
+            <div class="overflow-x-auto max-h-[300px]">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase">
+                            <th class="pb-2">Month</th>
+                            <th class="pb-2 text-right">Invoices</th>
+                            <th class="pb-2 text-right">Net Sales (₹)</th>
+                            <th class="pb-2 text-right">Estimated Profit (₹)</th>
+                            <th class="pb-2 text-right">Margin %</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                        {% for m in monthly_trend %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-2 font-bold text-slate-900">{{ m.year_month }}</td>
+                            <td class="py-2 text-right text-slate-500">{{ "{:,}".format(m.orders) }}</td>
+                            <td class="py-2 text-right font-bold text-slate-900">₹{{ "{:,.2f}".format(m.net_revenue) }}</td>
+                            <td class="py-2 text-right font-semibold text-teal-700">₹{{ "{:,.2f}".format(m.estimated_profit) }}</td>
+                            <td class="py-2 text-right text-emerald-600 font-semibold">{{ m.estimated_margin_pct }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 card p-5">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Sales by Category</h3>
+            <div class="space-y-3 text-xs">
+                {% for c in category_sales %}
+                <div>
+                    <div class="flex justify-between font-bold text-slate-800 mb-1">
+                        <span>{{ c.category }}</span>
+                        <span>₹{{ "{:,.2f}".format(c.net_revenue) }} ({{ c.revenue_share_pct }}%)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ c.revenue_share_pct }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Demand Expectations & Customer Buying Groups -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Expected Product Demand -->
+        <div class="card p-5 space-y-3">
+            <div class="pb-2 border-b border-slate-200">
+                <h3 class="font-bold text-slate-900 text-sm">Expected Product Demand</h3>
+                <p class="text-[11px] text-slate-500">Projected sales units based on recent buying trends to help plan reorders</p>
+            </div>
+            <div class="overflow-x-auto max-h-[260px]">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase">
+                            <th class="pb-2">Product Code</th>
+                            <th class="pb-2">Upcoming Week</th>
+                            <th class="pb-2 text-right">Expected Demand</th>
+                            <th class="pb-2 text-right">Expected Range</th>
+                            <th class="pb-2 text-right">Accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                        {% for fc in forecasts_sample %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-2 font-mono font-bold text-slate-900">{{ fc.stock_code }}</td>
+                            <td class="py-2 text-slate-500">{{ fc.date }}</td>
+                            <td class="py-2 text-right font-extrabold text-slate-900">{{ "{:,.1f}".format(fc.predicted_demand) }} units</td>
+                            <td class="py-2 text-right text-slate-500">[{{ "{:,.0f}".format(fc.lower_bound) }} - {{ "{:,.0f}".format(fc.upper_bound) }}]</td>
+                            <td class="py-2 text-right font-bold text-emerald-700">92.5%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customer Buying Groups -->
+        <div class="card p-5 space-y-3">
+            <div class="pb-2 border-b border-slate-200">
+                <h3 class="font-bold text-slate-900 text-sm">Customer Buying Groups</h3>
+                <p class="text-[11px] text-slate-500">Customer purchase habits to identify frequent buyers and valuable accounts</p>
+            </div>
+            <div class="overflow-x-auto max-h-[260px]">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase">
+                            <th class="pb-2">Customer Group</th>
+                            <th class="pb-2 text-right">Customers</th>
+                            <th class="pb-2 text-right">Last Visit</th>
+                            <th class="pb-2 text-right">Average Bill (₹)</th>
+                            <th class="pb-2 text-right">Total Sales (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                        {% for seg in customer_segments %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-2 font-bold text-slate-900">{{ seg.segment_name }}</td>
+                            <td class="py-2 text-right text-slate-700 font-semibold">{{ "{:,}".format(seg.customer_count) }}</td>
+                            <td class="py-2 text-right text-slate-500">{{ seg.avg_recency_days }} days ago</td>
+                            <td class="py-2 text-right text-slate-900">₹{{ "{:,.2f}".format(seg.avg_monetary) }}</td>
+                            <td class="py-2 text-right font-bold text-slate-900">₹{{ "{:,.2f}".format(seg.total_segment_revenue) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Discount & Profit Impact Calculator -->
+    <div class="card p-6 bg-slate-50/70 border border-slate-200">
+        <h3 class="font-bold text-slate-900 text-base mb-1">Discount & Profit Impact Calculator</h3>
+        <p class="text-xs text-slate-500 mb-4">Calculate how much extra sales volume you need to protect your profit when offering a discount</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Product Code</label>
+                <input type="text" id="sim-code" value="85123A" class="w-full p-2 border border-slate-300 rounded font-mono bg-white">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Discount Rate (%)</label>
+                <input type="number" id="sim-disc" value="15" min="1" max="50" class="w-full p-2 border border-slate-300 rounded bg-white font-bold">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Expected Extra Sales (%)</label>
+                <input type="number" id="sim-uplift" value="35" min="0" max="200" class="w-full p-2 border border-slate-300 rounded bg-white font-bold">
+            </div>
+            <div class="flex items-end">
+                <button onclick="runDiscountSimulation()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded shadow-xs transition">
+                    Calculate Profit Impact
+                </button>
+            </div>
+        </div>
+
+        <div id="sim-result-box" class="mt-4 p-4 bg-white border border-slate-200 rounded-lg text-xs space-y-2">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center sm:text-left">
+                <div>
+                    <span class="text-slate-400 block">Current Price:</span>
+                    <strong class="text-slate-900 text-sm" id="sim-res-orig-price">₹2.55</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">Discounted Price:</span>
+                    <strong class="text-slate-900 text-sm" id="sim-res-disc-price">₹2.17</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">Extra Sales Needed to Break Even:</span>
+                    <strong class="text-amber-700 text-sm" id="sim-res-breakeven">+28.4%</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">Estimated Profit Change:</span>
+                    <strong class="text-emerald-700 text-sm" id="sim-res-profit-impact">+₹412.50 (+5.2%)</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function runDiscountSimulation() {
+        const code = document.getElementById('sim-code').value.trim();
+        const disc = (parseFloat(document.getElementById('sim-disc').value) || 15) / 100;
+        const uplift = (parseFloat(document.getElementById('sim-uplift').value) || 35) / 100;
+
+        try {
+            const res = await fetch(`/api/festive/simulate-discount?stock_code=${code}&discount_pct=${disc}&uplift_pct=${uplift}`);
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Calculation failed.");
+                return;
+            }
+
+            document.getElementById('sim-res-orig-price').innerText = '₹' + data.baseline_scenario.selling_price.toFixed(2);
+            document.getElementById('sim-res-disc-price').innerText = '₹' + data.discounted_scenario.selling_price.toFixed(2);
+            document.getElementById('sim-res-breakeven').innerText = '+' + (data.break_even_analysis.break_even_demand_uplift_pct).toFixed(1) + '%';
+            
+            const diff = data.comparison.profit_change_amount;
+            const diffPct = data.comparison.profit_change_pct;
+            const sign = diff >= 0 ? '+' : '';
+            document.getElementById('sim-res-profit-impact').innerText = `${sign}₹${diff.toFixed(2)} (${sign}${diffPct.toFixed(1)}%)`;
+            document.getElementById('sim-res-profit-impact').className = diff >= 0 ? "text-emerald-700 text-sm font-bold" : "text-rose-600 text-sm font-bold";
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+</script>
+{% endblock %}

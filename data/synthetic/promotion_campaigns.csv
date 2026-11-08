@@ -1,0 +1,6 @@
+campaign_id,campaign_name,promotion_type,start_date,end_date,target_category,discount_percentage,campaign_budget,is_synthetic
+CMP-2010-01,Autumn Festive Lighting & Lantern Blitz,Festive,2010-10-15,2010-11-15,Home Decor,0.15,5000.0,True
+CMP-2010-02,Christmas Grand Joy Mega Sale,Seasonal,2010-12-01,2010-12-24,Gifts & Novelties,0.2,12000.0,True
+CMP-2011-01,New Year Home Renewal Special,Clearance,2011-01-02,2011-01-20,Kitchenware,0.25,3500.0,True
+CMP-2011-02,Diwali Golden Radiance Gifting Fest,Festive,2011-10-10,2011-11-05,Seasonal & Gifts,0.18,8500.0,True
+CMP-2011-03,Black Friday & Cyber Week Countdown,Flash,2011-11-20,2011-11-30,General Merchandise,0.3,15000.0,True

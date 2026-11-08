@@ -1,0 +1,6 @@
+festival_name,start_date,end_date,festival_category,demand_uplift_assumption,notes,is_synthetic
+Diwali 2010,2010-10-25,2010-11-08,Gifts & Home Decor,0.45,"Diwali festive shopping peak across lighting, gifts, kitchenware, and seasonal hampers.",True
+Christmas & New Year 2010,2010-12-01,2010-12-28,Holiday & Seasonal,0.55,Major holiday peak in UK & international retail demand.,True
+Pongal & Sankranti 2011,2011-01-10,2011-01-18,Traditional & Home,0.25,Harvest festival seasonal demand for traditional gifts and tableware.,True
+Diwali 2011,2011-10-15,2011-10-30,Gifts & Home Decor,0.5,Autumn festive surge with focus on premium gifting and home adornment.,True
+Christmas & Year End 2011,2011-11-25,2011-12-25,Holiday & Seasonal,0.6,Annual peak volume driven by seasonal giftwares and decorations.,True

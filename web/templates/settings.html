@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="pb-2 border-b border-slate-200">
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Shop Settings & Staff Accounts</h1>
+        <p class="text-sm text-slate-500 mt-0.5">Configure store address, GSTIN, receipt layout, and cashier staff credentials</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Left: Shop Profile Form -->
+        <div class="card p-5 space-y-4">
+            <h2 class="text-base font-bold text-slate-900 pb-2 border-b border-slate-200">Store Profile & Tax Info</h2>
+
+            <form id="settings-form" onsubmit="handleSettingsSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Shop Name *</label>
+                    <input type="text" id="set-name" value="{{ shop_profile.shop_name }}" required class="w-full p-2 border border-slate-300 rounded-lg font-bold text-slate-900">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Tagline</label>
+                    <input type="text" id="set-tagline" value="{{ shop_profile.tagline }}" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Phone Number *</label>
+                        <input type="text" id="set-phone" value="{{ shop_profile.phone }}" required class="w-full p-2 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">GSTIN Number</label>
+                        <input type="text" id="set-gstin" value="{{ shop_profile.gstin }}" class="w-full p-2 border border-slate-300 rounded-lg font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Store Address *</label>
+                    <textarea id="set-addr" rows="2" required class="w-full p-2 border border-slate-300 rounded-lg">{{ shop_profile.address }}</textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Receipt Footer Note</label>
+                    <input type="text" id="set-footer" value="{{ shop_profile.receipt_footer }}" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm">
+                        Save Shop Details
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Right: Staff & Cashier Accounts -->
+        <div class="card p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                <h2 class="text-base font-bold text-slate-900">Cashier & Staff Accounts</h2>
+                <button onclick="openStaffModal()" class="text-xs font-bold text-emerald-600 hover:underline">+ Add Staff</button>
+            </div>
+
+            <div class="space-y-3">
+                {% for u in users %}
+                <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+                    <div>
+                        <div class="font-bold text-slate-900">{{ u.full_name }}</div>
+                        <div class="text-slate-500 font-mono text-[11px]">Username: {{ u.username }}</div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-600 font-medium">Role: <strong class="text-slate-900 capitalize">{{ 'Owner' if u.role == 'owner' else 'Cashier' }}</strong></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 space-y-1">
+                <span class="font-semibold text-slate-800">Account Access:</span>
+                <p class="text-[11px] text-slate-500">
+                    Staff assigned the Cashier role can process sales bills, search items, and check inventory.
+                    Confidential purchase costs, profit margins, and store reports are restricted to the Owner.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Add Staff Modal -->
+<div id="staff-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <h3 class="font-bold text-slate-900 text-base">Add Staff Account</h3>
+            <button onclick="closeStaffModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="staff-form" onsubmit="handleStaffSubmit(event)" class="space-y-3 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Full Name *</label>
+                <input type="text" id="st-name" required placeholder="e.g. Counter Staff 2" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Username *</label>
+                <input type="text" id="st-user" required placeholder="e.g. cashier2" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Password *</label>
+                <input type="password" id="st-pass" required placeholder="Minimum 6 characters" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Role *</label>
+                <select id="st-role" class="w-full p-2 border border-slate-300 rounded-lg bg-white">
+                    <option value="cashier">Cashier (Billing & Sales Only)</option>
+                    <option value="owner">Co-Owner (Full Admin Access)</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200">
+                <button type="button" onclick="closeStaffModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm">
+                    Create Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function handleSettingsSubmit(e) {
+        e.preventDefault();
+        const payload = {
+            shop_name: document.getElementById('set-name').value.trim(),
+            tagline: document.getElementById('set-tagline').value.trim(),
+            phone: document.getElementById('set-phone').value.trim(),
+            gstin: document.getElementById('set-gstin').value.trim(),
+            address: document.getElementById('set-addr').value.trim(),
+            receipt_footer: document.getElementById('set-footer').value.trim()
+        };
+
+        try {
+            const res = await fetch('/api/settings/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to update settings.");
+                return;
+            }
+            alert("Shop settings saved successfully!");
+            window.location.reload();
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    function openStaffModal() {
+        document.getElementById('staff-modal').classList.remove('hidden');
+    }
+
+    function closeStaffModal() {
+        document.getElementById('staff-modal').classList.add('hidden');
+    }
+
+    async function handleStaffSubmit(e) {
+        e.preventDefault();
+        const payload = {
+            full_name: document.getElementById('st-name').value.trim(),
+            username: document.getElementById('st-user').value.trim(),
+            password: document.getElementById('st-pass').value,
+            role: document.getElementById('st-role').value
+        };
+
+        try {
+            const res = await fetch('/api/auth/register-staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to create staff account.");
+                return;
+            }
+            alert(`Staff account '${data.username}' created successfully!`);
+            window.location.reload();
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,942 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-4">
+
+    <!-- Top Bar: Barcode Input & Scanner Support -->
+    <div class="card p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 border-slate-200">
+        <div class="flex items-center space-x-2 flex-1">
+            <div class="relative w-full max-w-md">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                </div>
+                <input type="text" id="barcode-input" autofocus placeholder="Scan Barcode or type & press Enter..." 
+                       class="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium focus:ring-1 focus:ring-emerald-600 focus:outline-none placeholder-slate-400">
+            </div>
+            <button onclick="handleBarcodeScan()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition shrink-0">
+                Scan / Add
+            </button>
+        </div>
+        <div class="flex items-center space-x-3 text-xs text-slate-500">
+            <span>Shortcuts: <kbd class="font-mono bg-white px-1.5 py-0.5 border border-slate-200 rounded text-slate-800">F2</kbd> Complete Sale &bull; <kbd class="font-mono bg-white px-1.5 py-0.5 border border-slate-200 rounded text-slate-800">Esc</kbd> Clear Cart</span>
+        </div>
+    </div>
+
+    <!-- Main POS Grid: Left Catalog, Right Cart -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- Left Column: Search & Product Catalog (7 cols) -->
+        <div class="lg:col-span-7 space-y-3">
+
+            <!-- Category Pills & Search -->
+            <div class="card p-3 space-y-2.5">
+                <div class="relative">
+                    <input type="text" id="product-search" oninput="filterProducts()" placeholder="Search products by name or brand..." 
+                           class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-emerald-600 focus:outline-none">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex space-x-1.5 overflow-x-auto pb-1 text-xs scrollbar-none" id="category-pills">
+                    <button onclick="selectCategory(0)" class="cat-pill active px-3 py-1 rounded-full font-medium bg-emerald-700 text-white shrink-0 transition" data-id="0">
+                        All Items
+                    </button>
+                    {% for c in categories %}
+                    <button onclick="selectCategory({{ c.id }})" class="cat-pill px-3 py-1 rounded-full font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 shrink-0 transition" data-id="{{ c.id }}">
+                        {{ c.name }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Products List / Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[580px] overflow-y-auto pr-1" id="product-grid">
+                {% for p in products %}
+                <div class="product-card card p-3 hover:border-slate-400 transition cursor-pointer flex flex-col justify-between"
+                     data-id="{{ p.id }}" data-barcode="{{ p.barcode }}" data-name="{{ p.name }}" data-category="{{ p.category_id }}"
+                     data-price="{{ p.selling_price }}" data-stock="{{ p.stock_qty }}" data-gst="{{ p.gst_rate }}" data-unit="{{ p.unit }}"
+                     onclick="addToCart({{ p.id }})">
+                    <div>
+                        <div class="flex items-start justify-between">
+                            <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{{ p.brand or p.category_name }}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {% if p.stock_qty <= 0 %}bg-red-50 text-red-700 border border-red-200{% elif p.stock_qty <= p.min_stock_qty %}bg-amber-50 text-amber-800 border border-amber-200{% else %}bg-slate-100 text-slate-700{% endif %}">
+                                {{ "{:,.0f}".format(p.stock_qty) }} {{ p.unit }}
+                            </span>
+                        </div>
+                        <h3 class="text-xs font-bold text-slate-900 mt-1 line-clamp-2">{{ p.name }}</h3>
+                        {% if p.barcode %}
+                        <p class="text-[10px] text-slate-400 font-mono mt-0.5">{{ p.barcode }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-900">₹{{ "{:,.2f}".format(p.selling_price) }}</span>
+                        <button class="px-2.5 py-1 bg-slate-50 hover:bg-slate-900 hover:text-white text-slate-700 text-xs font-semibold rounded border border-slate-200 transition">
+                            + Add
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- Right Column: Active Cart & Billing Terminal (5 cols) -->
+        <div class="lg:col-span-5 space-y-3">
+
+            <div class="card p-4 space-y-3.5">
+
+                <!-- Customer Picker -->
+                <div class="pb-3 border-b border-slate-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Customer Details</label>
+                        <button onclick="openCustomerModal()" class="text-xs text-emerald-700 hover:underline font-semibold">+ New Customer</button>
+                    </div>
+                    <select id="customer-select" class="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 bg-white focus:ring-1 focus:ring-emerald-600 focus:outline-none">
+                        <option value="">Walk-in Customer (Cash / UPI)</option>
+                        {% for cust in customers %}
+                        <option value="{{ cust.id }}" data-credit="{{ cust.credit_balance }}">
+                            {{ cust.name }} ({{ cust.phone }}) {% if cust.credit_balance > 0 %}[Udhaar: ₹{{ "{:,.2f}".format(cust.credit_balance) }}]{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Cart Items Table -->
+                <div class="min-h-[190px] max-h-[280px] overflow-y-auto pr-1">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-400 font-semibold uppercase">
+                                <th class="pb-1.5">Item</th>
+                                <th class="pb-1.5 text-center">Qty</th>
+                                <th class="pb-1.5 text-right">Price</th>
+                                <th class="pb-1.5 text-right">Total</th>
+                                <th class="pb-1.5 w-6"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-tbody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                    <div id="cart-empty" class="py-10 text-center text-slate-400 text-xs">
+                        Cart is empty. Scan barcode or click any product to add.
+                    </div>
+                </div>
+
+                <!-- Functional Discount Selector & Quick Create -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Apply Discount Offer</span>
+                        <button type="button" onclick="openQuickDiscountModal()" class="text-emerald-700 hover:underline font-semibold text-[11px]">
+                            + Create New Discount
+                        </button>
+                    </div>
+                    <select id="discount-select" onchange="handleDiscountSelection()" class="w-full p-2 bg-white border border-slate-300 rounded-lg font-medium text-xs">
+                        <option value="0">-- No Discount --</option>
+                        {% for d in active_discounts %}
+                        <option value="{{ d.id }}" data-name="{{ d.name }}" data-type="{{ d.discount_type }}" data-val="{{ d.discount_value }}" data-applies="{{ d.applies_to }}" data-min="{{ d.min_bill_amount }}" data-max="{{ d.max_discount_amount or '' }}" data-target-prod="{{ d.target_product_id or '' }}" data-target-cat="{{ d.target_category_id or '' }}">
+                            {{ d.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <div id="manual-discount-box" class="flex items-center justify-between pt-1">
+                        <span class="text-slate-500 text-[11px]">Or Manual Amount (₹):</span>
+                        <input type="number" id="cart-manual-discount" value="0" min="0" step="1" oninput="handleManualDiscountInput()" 
+                               class="w-20 text-right p-1 bg-white border border-slate-300 rounded text-xs font-semibold">
+                    </div>
+                </div>
+
+                <!-- Financial Calculations Breakdown -->
+                <div class="pt-2 border-t border-slate-200 space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Subtotal:</span>
+                        <span class="font-semibold text-slate-900" id="cart-subtotal">₹0.00</span>
+                    </div>
+
+                    <div id="discount-applied-row" class="hidden flex justify-between text-emerald-700 font-semibold">
+                        <span id="discount-applied-label">Discount:</span>
+                        <span id="discount-applied-amount">-₹0.00</span>
+                    </div>
+
+                    <div class="flex justify-between text-slate-600">
+                        <span>GST / Tax Total:</span>
+                        <span class="font-semibold text-slate-900" id="cart-tax">₹0.00</span>
+                    </div>
+
+                    <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
+                        <span>Total Payable:</span>
+                        <span class="text-xl font-bold text-emerald-700" id="cart-final-total">₹0.00</span>
+                    </div>
+                </div>
+
+                <!-- Payment Method Toggle -->
+                <div class="pt-1">
+                    <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">Select Payment Mode</label>
+                    <div class="grid grid-cols-4 gap-1.5 text-xs font-semibold">
+                        <button type="button" onclick="selectPaymentMethod('cash')" id="btn-pay-cash" class="pay-btn p-2 rounded border border-emerald-600 bg-emerald-50 text-emerald-800 text-center transition">
+                            Cash
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('upi')" id="btn-pay-upi" class="pay-btn p-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-center transition">
+                            UPI
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('card')" id="btn-pay-card" class="pay-btn p-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-center transition">
+                            Card
+                        </button>
+                        <button type="button" onclick="selectPaymentMethod('credit')" id="btn-pay-credit" class="pay-btn p-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-center transition">
+                            Udhaar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cash Tendered & Change Box (Only visible for Cash) -->
+                <div id="cash-tendered-box" class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 font-medium">Cash Received (₹):</span>
+                        <input type="number" id="cash-paid-input" oninput="calculateChange()" placeholder="0.00" 
+                               class="w-24 text-right p-1.5 bg-white border border-slate-300 rounded font-bold text-slate-900">
+                    </div>
+                    <div class="flex items-center justify-between text-slate-700 font-bold">
+                        <span>Change to Return:</span>
+                        <span id="cash-change-val" class="text-emerald-700 font-extrabold text-sm">₹0.00</span>
+                    </div>
+                </div>
+
+                <!-- UPI Reference Box -->
+                <div id="upi-box" class="hidden p-3 bg-blue-50/50 border border-blue-200 rounded-lg text-center text-xs space-y-2">
+                    <p class="font-semibold text-blue-900">Scan store QR code using any UPI app</p>
+                    <input type="text" id="upi-ref-input" placeholder="UPI Reference / UTR (optional)" 
+                           class="w-full text-xs p-1.5 bg-white border border-blue-300 rounded text-center">
+                </div>
+
+                <!-- Complete & Clear Buttons -->
+                <div class="pt-2 space-y-2">
+                    <button onclick="processBill()" id="btn-complete-sale" 
+                            class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-lg shadow-sm transition flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Complete Sale & Print Bill (F2)</span>
+                    </button>
+                    <button onclick="clearCart()" 
+                            class="w-full py-1.5 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-xs rounded border border-slate-300 transition">
+                        Clear Cart
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Customer Registration Modal -->
+<div id="customer-modal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 space-y-3">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <h3 class="font-bold text-slate-900 text-sm">Add New Customer</h3>
+            <button onclick="closeCustomerModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-2 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Customer Name *</label>
+                <input type="text" id="new-cust-name" class="w-full p-2 border border-slate-300 rounded">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Phone Number (10 Digits) *</label>
+                <input type="tel" id="new-cust-phone" placeholder="9900000001" class="w-full p-2 border border-slate-300 rounded font-mono">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Address (Optional)</label>
+                <input type="text" id="new-cust-addr" class="w-full p-2 border border-slate-300 rounded">
+            </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+            <button onclick="closeCustomerModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded font-medium">Cancel</button>
+            <button onclick="saveNewCustomer()" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs rounded font-semibold">Save Customer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Custom Discount Modal (directly from billing) -->
+<div id="quick-discount-modal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 space-y-3.5">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <div>
+                <h3 class="font-bold text-slate-900 text-sm">Create New Discount</h3>
+                <p class="text-[11px] text-slate-500">Apply instantly to the current bill</p>
+            </div>
+            <button onclick="closeQuickDiscountModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <div class="space-y-3 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Discount Name *</label>
+                <input type="text" id="qd-name" placeholder="e.g. Special Customer Offer, Clearance 5%" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Type</label>
+                    <select id="qd-type" class="w-full p-2 border border-slate-300 rounded-lg font-medium">
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed (₹)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Value *</label>
+                    <input type="number" id="qd-val" min="0.1" step="0.1" placeholder="e.g. 5 or 50" class="w-full p-2 border border-slate-300 rounded-lg font-bold">
+                </div>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Applies To</label>
+                <select id="qd-applies" class="w-full p-2 border border-slate-300 rounded-lg font-medium">
+                    <option value="entire_bill">Entire Bill</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+            <button onclick="closeQuickDiscountModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded font-medium">Cancel</button>
+            <button onclick="saveQuickDiscount()" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs rounded font-bold">Save & Apply Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receipt-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200 no-print">
+            <h3 class="font-bold text-slate-900 text-sm">Bill Generated Successfully!</h3>
+            <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Printable Bill Container -->
+        <div id="receipt-print-area" class="p-4 bg-slate-50 border border-slate-200 rounded text-slate-900 font-mono text-xs">
+            <!-- Dynamic receipt HTML inserted here -->
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200 no-print">
+            <button onclick="printReceipt()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm">
+                🖨️ Print Receipt
+            </button>
+            <button onclick="closeReceiptModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">
+                Done (Next Bill)
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let cart = [];
+    let selectedPayment = 'cash';
+    let selectedCat = 0;
+
+    let appliedDiscount = {
+        id: null,
+        name: "",
+        type: "none",
+        rate: 0.0,
+        amount: 0.0
+    };
+
+    const productsData = [
+        {% for p in products %}
+        {
+            id: {{ p.id }},
+            barcode: "{{ p.barcode or '' }}",
+            name: "{{ p.name }}",
+            brand: "{{ p.brand or '' }}",
+            category_id: {{ p.category_id or 0 }},
+            selling_price: {{ p.selling_price }},
+            stock_qty: {{ p.stock_qty }},
+            gst_rate: {{ p.gst_rate }},
+            unit: "{{ p.unit }}"
+        },
+        {% endfor %}
+    ];
+
+    let activeDiscounts = [
+        {% for d in active_discounts %}
+        {
+            id: {{ d.id }},
+            name: "{{ d.name }}",
+            label: "{{ d.label }}",
+            discount_type: "{{ d.discount_type }}",
+            discount_value: {{ d.discount_value }},
+            applies_to: "{{ d.applies_to }}",
+            target_product_id: {{ d.target_product_id or 'null' }},
+            target_category_id: {{ d.target_category_id or 'null' }},
+            min_bill_amount: {{ d.min_bill_amount or 0.0 }},
+            max_discount_amount: {{ d.max_discount_amount or 'null' }}
+        },
+        {% endfor %}
+    ];
+
+    // Barcode Scanner Listener
+    document.getElementById('barcode-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleBarcodeScan();
+        }
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F2') {
+            e.preventDefault();
+            processBill();
+        } else if (e.key === 'Escape') {
+            clearCart();
+        }
+    });
+
+    function handleBarcodeScan() {
+        const input = document.getElementById('barcode-input');
+        const code = input.value.trim();
+        if (!code) return;
+
+        const p = productsData.find(x => x.barcode === code || x.barcode.endsWith(code));
+        if (p) {
+            addToCart(p.id);
+            input.value = '';
+            input.focus();
+        } else {
+            alert(`No product matching barcode '${code}' found in store inventory.`);
+            input.select();
+        }
+    }
+
+    function filterProducts() {
+        const q = document.getElementById('product-search').value.toLowerCase();
+        const cards = document.querySelectorAll('.product-card');
+
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name').toLowerCase();
+            const barcode = (card.getAttribute('data-barcode') || '').toLowerCase();
+            const catId = parseInt(card.getAttribute('data-category')) || 0;
+
+            const matchCat = (selectedCat === 0 || catId === selectedCat);
+            const matchQuery = (name.includes(q) || barcode.includes(q));
+
+            card.style.display = (matchCat && matchQuery) ? 'flex' : 'none';
+        });
+    }
+
+    function selectCategory(catId) {
+        selectedCat = catId;
+        const pills = document.querySelectorAll('.cat-pill');
+        pills.forEach(p => {
+            if (parseInt(p.getAttribute('data-id')) === catId) {
+                p.className = "cat-pill active px-3 py-1 rounded-full font-medium bg-emerald-700 text-white shrink-0 transition";
+            } else {
+                p.className = "cat-pill px-3 py-1 rounded-full font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 shrink-0 transition";
+            }
+        });
+        filterProducts();
+    }
+
+    function addToCart(productId) {
+        const p = productsData.find(x => x.id === productId);
+        if (!p) return;
+
+        if (p.stock_qty <= 0) {
+            alert(`'${p.name}' is currently OUT OF STOCK.`);
+            return;
+        }
+
+        const existing = cart.find(x => x.product_id === productId);
+        if (existing) {
+            if (existing.quantity + 1 > p.stock_qty) {
+                alert(`Cannot add more. Available stock for '${p.name}' is ${p.stock_qty} ${p.unit}.`);
+                return;
+            }
+            existing.quantity += 1;
+        } else {
+            cart.push({
+                product_id: p.id,
+                name: p.name,
+                unit_price: p.selling_price,
+                quantity: 1,
+                unit: p.unit,
+                stock_qty: p.stock_qty,
+                gst_rate: p.gst_rate,
+                category_id: p.category_id,
+                discount_amount: 0
+            });
+        }
+        renderCart();
+    }
+
+    function updateCartQty(productId, delta) {
+        const item = cart.find(x => x.product_id === productId);
+        if (!item) return;
+
+        const newQty = item.quantity + delta;
+        if (newQty <= 0) {
+            removeFromCart(productId);
+            return;
+        }
+        if (newQty > item.stock_qty) {
+            alert(`Available stock for '${item.name}' is ${item.stock_qty} ${item.unit}.`);
+            return;
+        }
+        item.quantity = newQty;
+        renderCart();
+    }
+
+    function removeFromCart(productId) {
+        cart = cart.filter(x => x.product_id !== productId);
+        renderCart();
+    }
+
+    function renderCart() {
+        const tbody = document.getElementById('cart-tbody');
+        const emptyState = document.getElementById('cart-empty');
+        tbody.innerHTML = '';
+
+        if (cart.length === 0) {
+            emptyState.style.display = 'block';
+            resetDiscountCalculation();
+            calculateTotals();
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        cart.forEach(item => {
+            const lineTotal = item.quantity * item.unit_price;
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition";
+            tr.innerHTML = `
+                <td class="py-2 pr-1">
+                    <div class="font-bold text-slate-900 truncate max-w-[130px]">${item.name}</div>
+                    <div class="text-[10px] text-slate-400">₹${item.unit_price.toFixed(2)} / ${item.unit}</div>
+                </td>
+                <td class="py-2 text-center">
+                    <div class="inline-flex items-center space-x-1 border border-slate-200 rounded px-1 py-0.5 bg-white">
+                        <button onclick="updateCartQty(${item.product_id}, -1)" class="text-slate-500 hover:text-slate-900 font-bold px-1">&minus;</button>
+                        <span class="w-6 text-center font-bold text-slate-900">${item.quantity}</span>
+                        <button onclick="updateCartQty(${item.product_id}, 1)" class="text-slate-500 hover:text-slate-900 font-bold px-1">&plus;</button>
+                    </div>
+                </td>
+                <td class="py-2 text-right text-slate-600 font-medium">₹${item.unit_price.toFixed(2)}</td>
+                <td class="py-2 text-right font-bold text-slate-900">₹${lineTotal.toFixed(2)}</td>
+                <td class="py-2 text-center">
+                    <button onclick="removeFromCart(${item.product_id})" class="text-slate-400 hover:text-red-600 font-bold ml-1">&times;</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        calculateTotals();
+    }
+
+    function handleDiscountSelection() {
+        const sel = document.getElementById('discount-select');
+        const discId = parseInt(sel.value) || 0;
+        document.getElementById('cart-manual-discount').value = 0;
+
+        if (discId === 0) {
+            resetDiscountCalculation();
+            calculateTotals();
+            return;
+        }
+
+        const opt = sel.options[sel.selectedIndex];
+        const disc = activeDiscounts.find(x => x.id === discId);
+        if (!disc) return;
+
+        appliedDiscount.id = disc.id;
+        appliedDiscount.name = disc.name;
+        appliedDiscount.type = disc.discount_type;
+        appliedDiscount.rate = disc.discount_value;
+
+        calculateTotals();
+    }
+
+    function handleManualDiscountInput() {
+        const manVal = parseFloat(document.getElementById('cart-manual-discount').value) || 0.0;
+        if (manVal > 0) {
+            document.getElementById('discount-select').value = "0";
+            appliedDiscount.id = null;
+            appliedDiscount.name = "Custom Discount";
+            appliedDiscount.type = "fixed";
+            appliedDiscount.rate = 0.0;
+            appliedDiscount.amount = manVal;
+        } else {
+            resetDiscountCalculation();
+        }
+        calculateTotals();
+    }
+
+    function resetDiscountCalculation() {
+        appliedDiscount = {
+            id: null,
+            name: "",
+            type: "none",
+            rate: 0.0,
+            amount: 0.0
+        };
+    }
+
+    function calculateTotals() {
+        let subtotal = 0;
+        cart.forEach(item => {
+            subtotal += (item.quantity * item.unit_price);
+        });
+
+        // Compute discount
+        let discAmount = 0;
+        if (appliedDiscount.id) {
+            const disc = activeDiscounts.find(x => x.id === appliedDiscount.id);
+            if (disc) {
+                if (disc.min_bill_amount && subtotal < disc.min_bill_amount) {
+                    discAmount = 0;
+                } else {
+                    let eligible = 0;
+                    if (disc.applies_to === 'entire_bill') {
+                        eligible = subtotal;
+                    } else if (disc.applies_to === 'product' && disc.target_product_id) {
+                        cart.filter(x => x.product_id === disc.target_product_id).forEach(x => eligible += (x.quantity * x.unit_price));
+                    } else if (disc.applies_to === 'category' && disc.target_category_id) {
+                        cart.filter(x => x.category_id === disc.target_category_id).forEach(x => eligible += (x.quantity * x.unit_price));
+                    } else {
+                        eligible = subtotal;
+                    }
+
+                    if (disc.discount_type === 'percentage') {
+                        discAmount = (eligible * disc.discount_value) / 100.0;
+                    } else {
+                        discAmount = Math.min(disc.discount_value, eligible);
+                    }
+
+                    if (disc.max_discount_amount && disc.max_discount_amount > 0) {
+                        discAmount = Math.min(discAmount, disc.max_discount_amount);
+                    }
+                }
+            }
+        } else if (appliedDiscount.type === 'fixed' && appliedDiscount.amount > 0) {
+            discAmount = appliedDiscount.amount;
+        }
+
+        discAmount = Math.min(discAmount, subtotal);
+        discAmount = Math.max(0, discAmount);
+        appliedDiscount.amount = discAmount;
+
+        // Compute GST on post-discount taxable amount
+        let taxTotal = 0;
+        const discountRatio = subtotal > 0 ? (subtotal - discAmount) / subtotal : 1;
+        cart.forEach(item => {
+            const lineGross = item.quantity * item.unit_price;
+            const taxableLine = lineGross * discountRatio;
+            taxTotal += taxableLine * (item.gst_rate / 100.0);
+        });
+
+        const finalTotal = Math.max(0, subtotal - discAmount + taxTotal);
+
+        document.getElementById('cart-subtotal').innerText = '₹' + subtotal.toFixed(2);
+        
+        const discRow = document.getElementById('discount-applied-row');
+        if (discAmount > 0) {
+            discRow.classList.remove('hidden');
+            const labelText = appliedDiscount.name ? `Discount: ${appliedDiscount.name}` : `Discount:`;
+            document.getElementById('discount-applied-label').innerText = labelText;
+            document.getElementById('discount-applied-amount').innerText = '-₹' + discAmount.toFixed(2);
+        } else {
+            discRow.classList.add('hidden');
+        }
+
+        document.getElementById('cart-tax').innerText = '₹' + taxTotal.toFixed(2);
+        document.getElementById('cart-final-total').innerText = '₹' + finalTotal.toFixed(2);
+
+        calculateChange();
+    }
+
+    function selectPaymentMethod(mode) {
+        selectedPayment = mode;
+        const modes = ['cash', 'upi', 'card', 'credit'];
+        modes.forEach(m => {
+            const btn = document.getElementById('btn-pay-' + m);
+            if (m === mode) {
+                btn.className = "pay-btn p-2 rounded border border-emerald-600 bg-emerald-50 text-emerald-800 text-center font-bold transition";
+            } else {
+                btn.className = "pay-btn p-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-center font-medium transition";
+            }
+        });
+
+        document.getElementById('cash-tendered-box').style.display = (mode === 'cash') ? 'block' : 'none';
+        document.getElementById('upi-box').style.display = (mode === 'upi') ? 'block' : 'none';
+    }
+
+    function calculateChange() {
+        if (selectedPayment !== 'cash') return;
+        const total = parseFloat(document.getElementById('cart-final-total').innerText.replace('₹', '')) || 0;
+        const paid = parseFloat(document.getElementById('cash-paid-input').value) || 0;
+        const change = Math.max(0, paid - total);
+        document.getElementById('cash-change-val').innerText = '₹' + change.toFixed(2);
+    }
+
+    function clearCart() {
+        cart = [];
+        resetDiscountCalculation();
+        document.getElementById('discount-select').value = "0";
+        document.getElementById('cart-manual-discount').value = "0";
+        document.getElementById('cash-paid-input').value = '';
+        renderCart();
+    }
+
+    async function processBill() {
+        if (cart.length === 0) {
+            alert("Cart is empty! Please add products before checking out.");
+            return;
+        }
+
+        const customerId = document.getElementById('customer-select').value || null;
+        if (selectedPayment === 'credit' && !customerId) {
+            alert("Udhaar / Credit payment requires selecting a registered customer.");
+            return;
+        }
+
+        const total = parseFloat(document.getElementById('cart-final-total').innerText.replace('₹', '')) || 0;
+        let paidAmount = total;
+        if (selectedPayment === 'credit') {
+            paidAmount = 0.0;
+        } else if (selectedPayment === 'cash') {
+            paidAmount = parseFloat(document.getElementById('cash-paid-input').value) || total;
+        }
+
+        const payload = {
+            items: cart.map(x => ({
+                product_id: x.product_id,
+                quantity: x.quantity,
+                discount_amount: 0.0
+            })),
+            payment_method: selectedPayment,
+            customer_id: customerId ? parseInt(customerId) : null,
+            bill_discount: appliedDiscount.amount,
+            discount_id: appliedDiscount.id,
+            discount_name: appliedDiscount.name || null,
+            discount_type: appliedDiscount.type || null,
+            discount_rate: appliedDiscount.rate || null,
+            paid_amount: paidAmount
+        };
+
+        try {
+            document.getElementById('btn-complete-sale').disabled = true;
+            document.getElementById('btn-complete-sale').innerText = "Processing Bill...";
+
+            const res = await fetch('/api/billing/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "We couldn't save this bill. Please try again.");
+                return;
+            }
+
+            // Open Receipt Modal
+            showReceipt(data.receipt);
+            clearCart();
+        } catch (err) {
+            alert("Connection error: " + err.message);
+        } finally {
+            document.getElementById('btn-complete-sale').disabled = false;
+            document.getElementById('btn-complete-sale').innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Complete Sale & Print Bill (F2)</span>
+            `;
+        }
+    }
+
+    function showReceipt(receipt) {
+        const area = document.getElementById('receipt-print-area');
+        let itemsHtml = receipt.items.map(it => `
+            <div class="flex justify-between py-0.5">
+                <span>${it.product_name} x ${it.quantity}</span>
+                <span>₹${it.line_total.toFixed(2)}</span>
+            </div>
+        `).join('');
+
+        const discHtml = receipt.discount_amount > 0 ? `
+            <div class="flex justify-between text-emerald-800 font-semibold">
+                <span>Discount (${receipt.discount_name || 'Special Offer'}):</span>
+                <span>-₹${receipt.discount_amount.toFixed(2)}</span>
+            </div>
+        ` : '';
+
+        area.innerHTML = `
+            <div class="text-center pb-2 border-b border-dashed border-slate-300">
+                <h2 class="font-bold text-sm text-slate-900">${receipt.shop.name}</h2>
+                <p class="text-[10px] text-slate-500">${receipt.shop.address}</p>
+                <p class="text-[10px] text-slate-500">Phone: ${receipt.shop.phone} | GSTIN: ${receipt.shop.gstin}</p>
+            </div>
+            <div class="py-2 text-[11px] border-b border-dashed border-slate-300 flex justify-between">
+                <div>
+                    <div><strong>Bill:</strong> ${receipt.bill_number}</div>
+                    <div><strong>Date:</strong> ${receipt.created_at}</div>
+                </div>
+                <div class="text-right">
+                    <div><strong>Pay:</strong> ${receipt.payment_method}</div>
+                    <div><strong>Cashier:</strong> ${receipt.cashier}</div>
+                </div>
+            </div>
+            ${receipt.customer ? `
+            <div class="py-1 text-[10px] text-slate-600 border-b border-dashed border-slate-300">
+                Customer: <strong>${receipt.customer.name}</strong> (${receipt.customer.phone})
+            </div>
+            ` : ''}
+            <div class="py-2 border-b border-dashed border-slate-300 space-y-1">
+                ${itemsHtml}
+            </div>
+            <div class="pt-2 space-y-1 text-right text-[11px]">
+                <div class="flex justify-between"><span>Subtotal:</span><span>₹${receipt.subtotal.toFixed(2)}</span></div>
+                ${discHtml}
+                <div class="flex justify-between"><span>GST/Tax:</span><span>₹${receipt.tax_amount.toFixed(2)}</span></div>
+                <div class="flex justify-between font-bold text-sm text-slate-900 pt-1 border-t border-slate-300">
+                    <span>FINAL TOTAL:</span><span>₹${receipt.total_amount.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500"><span>Paid Amount:</span><span>₹${receipt.paid_amount.toFixed(2)}</span></div>
+                ${receipt.balance_due > 0 ? `<div class="flex justify-between text-rose-600 font-bold"><span>Balance Due (Udhaar):</span><span>₹${receipt.balance_due.toFixed(2)}</span></div>` : ''}
+            </div>
+            <div class="text-center pt-3 text-[10px] text-slate-500 border-t border-dashed border-slate-300 mt-2">
+                ${receipt.shop.footer}
+            </div>
+        `;
+        document.getElementById('receipt-modal').classList.remove('hidden');
+    }
+
+    function printReceipt() {
+        window.print();
+    }
+
+    function closeReceiptModal() {
+        document.getElementById('receipt-modal').classList.add('hidden');
+        document.getElementById('barcode-input').focus();
+    }
+
+    function openCustomerModal() {
+        document.getElementById('customer-modal').classList.remove('hidden');
+    }
+
+    function closeCustomerModal() {
+        document.getElementById('customer-modal').classList.add('hidden');
+    }
+
+    async function saveNewCustomer() {
+        const name = document.getElementById('new-cust-name').value.trim();
+        const phone = document.getElementById('new-cust-phone').value.trim();
+        const addr = document.getElementById('new-cust-addr').value.trim();
+
+        if (!name || !phone) {
+            alert("Name and Phone number are required.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/customers/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, address: addr })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to add customer.");
+                return;
+            }
+
+            // Append to dropdown and select
+            const sel = document.getElementById('customer-select');
+            const opt = document.createElement('option');
+            opt.value = data.id;
+            opt.innerText = `${data.name} (${data.phone})`;
+            opt.selected = true;
+            sel.appendChild(opt);
+
+            closeCustomerModal();
+            alert(`Customer ${data.name} registered successfully!`);
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    // Quick Custom Discount modal functions
+    function openQuickDiscountModal() {
+        document.getElementById('quick-discount-modal').classList.remove('hidden');
+        document.getElementById('qd-name').focus();
+    }
+
+    function closeQuickDiscountModal() {
+        document.getElementById('quick-discount-modal').classList.add('hidden');
+    }
+
+    async function saveQuickDiscount() {
+        const name = document.getElementById('qd-name').value.trim();
+        const discount_type = document.getElementById('qd-type').value;
+        const discount_value = parseFloat(document.getElementById('qd-val').value) || 0;
+        const applies_to = document.getElementById('qd-applies').value;
+
+        if (!name) {
+            alert("Please enter a discount name.");
+            return;
+        }
+        if (discount_value <= 0) {
+            alert("Please enter a discount value greater than zero.");
+            return;
+        }
+        if (discount_type === 'percentage' && discount_value > 100) {
+            alert("Percentage discount cannot exceed 100%.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/discounts/quick-create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    discount_type,
+                    discount_value,
+                    applies_to
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to create discount.");
+                return;
+            }
+
+            // Append to activeDiscounts and dropdown
+            const newDisc = {
+                id: data.id,
+                name: data.name,
+                label: `${data.name} (${data.discount_value}% Off)`,
+                discount_type: data.discount_type,
+                discount_value: data.discount_value,
+                applies_to: data.applies_to,
+                min_bill_amount: 0.0,
+                max_discount_amount: null
+            };
+            activeDiscounts.push(newDisc);
+
+            const sel = document.getElementById('discount-select');
+            const opt = document.createElement('option');
+            opt.value = data.id;
+            opt.innerText = `${data.name} (${data.discount_value}${data.discount_type === 'percentage' ? '%' : '₹'} Off)`;
+            opt.selected = true;
+            sel.appendChild(opt);
+
+            appliedDiscount.id = data.id;
+            appliedDiscount.name = data.name;
+            appliedDiscount.type = data.discount_type;
+            appliedDiscount.rate = data.discount_value;
+
+            closeQuickDiscountModal();
+            calculateTotals();
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+</script>
+{% endblock %}

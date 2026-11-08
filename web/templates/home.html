@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Greetings & Date -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Today's Shop Overview</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Real-time daily retail metrics for {{ current_date }}</p>
+        </div>
+        <div class="mt-3 sm:mt-0 flex items-center space-x-3">
+            <a href="/billing" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>New Bill (F2)</span>
+            </a>
+            <a href="/products" class="inline-flex items-center px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition space-x-1.5">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <span>Add Product</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 5 Core Shopkeeper KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- 1. Today's Sales -->
+        <div class="card p-4 border-l-4 border-l-emerald-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today's Sales</span>
+            <div class="mt-2 text-2xl font-bold text-slate-900">
+                ₹{{ "{:,.2f}".format(dashboard.today_sales) }}
+            </div>
+            <p class="text-[11px] text-emerald-600 font-medium mt-1">
+                {% if dashboard.sales_growth_pct >= 0 %}+{{ dashboard.sales_growth_pct }}% vs yesterday{% else %}{{ dashboard.sales_growth_pct }}% vs yesterday{% endif %}
+            </p>
+        </div>
+
+        <!-- 2. Today's Estimated Profit (Owner Only) -->
+        {% if is_owner %}
+        <div class="card p-4 border-l-4 border-l-teal-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estimated Profit</span>
+            <div class="mt-2 text-2xl font-bold text-teal-700">
+                ₹{{ "{:,.2f}".format(dashboard.today_profit or 0.0) }}
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium mt-1">
+                Sales minus product cost
+            </p>
+        </div>
+        {% else %}
+        <div class="card p-4 border-l-4 border-l-slate-400 bg-slate-50">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estimated Profit</span>
+            <div class="mt-2 text-lg font-bold text-slate-400">
+                Confidential
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Owner only access</p>
+        </div>
+        {% endif %}
+
+        <!-- 3. Bills Created -->
+        <div class="card p-4 border-l-4 border-l-blue-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bills Created</span>
+            <div class="mt-2 text-2xl font-bold text-slate-900">
+                {{ dashboard.today_bills_count }}
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium mt-1">
+                {{ "{:,.0f}".format(dashboard.today_units_sold) }} items sold
+            </p>
+        </div>
+
+        <!-- 4. Low Stock Alerts -->
+        <div class="card p-4 border-l-4 border-l-amber-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Low Stock Items</span>
+            <div class="mt-2 text-2xl font-bold {% if dashboard.low_stock_count > 0 %}text-amber-600{% else %}text-slate-900{% endif %}">
+                {{ dashboard.low_stock_count }}
+            </div>
+            <a href="/stock" class="text-[11px] text-amber-700 hover:underline font-semibold mt-1 inline-block">
+                View & Reorder &rarr;
+            </a>
+        </div>
+
+        <!-- 5. Customer Udhaar (Credit) -->
+        <div class="card p-4 border-l-4 border-l-rose-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Udhaar</span>
+            <div class="mt-2 text-2xl font-bold text-rose-600">
+                ₹{{ "{:,.2f}".format(dashboard.total_udhaar) }}
+            </div>
+            <a href="/customers" class="text-[11px] text-rose-700 hover:underline font-semibold mt-1 inline-block">
+                Open Khata &rarr;
+            </a>
+        </div>
+
+        <!-- 6. Supplier Payables (Owner Only) -->
+        {% if is_owner %}
+        <div class="card p-4 border-l-4 border-l-indigo-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Supplier Dues</span>
+            <div class="mt-2 text-2xl font-bold text-indigo-700">
+                ₹{{ "{:,.2f}".format(dashboard.total_supplier_payable or 0.0) }}
+            </div>
+            <a href="/purchases" class="text-[11px] text-indigo-600 hover:underline font-semibold mt-1 inline-block">
+                View Suppliers &rarr;
+            </a>
+        </div>
+        {% else %}
+        <div class="card p-4 border-l-4 border-l-slate-400 bg-slate-50">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Supplier Dues</span>
+            <div class="mt-2 text-lg font-bold text-slate-400">
+                Owner Only
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Restricted</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Payment Modes Distribution -->
+    <div class="card p-5">
+        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Today's Payment Methods</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="p-3 bg-emerald-50/60 border border-emerald-200 rounded-lg">
+                <span class="text-xs font-medium text-emerald-800">Cash Received</span>
+                <div class="text-xl font-bold text-emerald-900 mt-1">
+                    ₹{{ "{:,.2f}".format(dashboard.payment_breakdown.CASH) }}
+                </div>
+            </div>
+            <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg">
+                <span class="text-xs font-medium text-blue-800">UPI / QR Scan</span>
+                <div class="text-xl font-bold text-blue-900 mt-1">
+                    ₹{{ "{:,.2f}".format(dashboard.payment_breakdown.UPI) }}
+                </div>
+            </div>
+            <div class="p-3 bg-indigo-50/60 border border-indigo-200 rounded-lg">
+                <span class="text-xs font-medium text-indigo-800">Card Swipes</span>
+                <div class="text-xl font-bold text-indigo-900 mt-1">
+                    ₹{{ "{:,.2f}".format(dashboard.payment_breakdown.CARD) }}
+                </div>
+            </div>
+            <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
+                <span class="text-xs font-medium text-amber-800">Credit / Udhaar</span>
+                <div class="text-xl font-bold text-amber-900 mt-1">
+                    ₹{{ "{:,.2f}".format(dashboard.payment_breakdown.CREDIT) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Columns: Actionable Alerts & Top Selling Items -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Left: Actionable Alerts -->
+        <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold text-slate-900">Important Alerts & Reminders</h2>
+                <span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded-full">
+                    {{ dashboard.alerts|length }} Active
+                </span>
+            </div>
+            <div class="space-y-3">
+                {% for alert in dashboard.alerts %}
+                <div class="p-3.5 rounded-lg border {% if alert.type == 'warning' %}bg-amber-50/70 border-amber-200 text-amber-900{% else %}bg-slate-50 border-slate-200 text-slate-800{% endif %} flex items-start justify-between">
+                    <div>
+                        <div class="font-semibold text-sm">{{ alert.title }}</div>
+                        <p class="text-xs mt-0.5 text-slate-600">{{ alert.message }}</p>
+                    </div>
+                    {% if alert.link %}
+                    <a href="{{ alert.link }}" class="text-xs font-semibold px-2.5 py-1 bg-white border border-slate-300 rounded shadow-2xs hover:bg-slate-50 transition shrink-0 ml-3">
+                        Take Action
+                    </a>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-500 py-4 text-center">No urgent alerts. Everything is running smoothly!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right: Top Selling Products Today -->
+        <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold text-slate-900">Top Selling Products Today</h2>
+                <a href="/products" class="text-xs font-semibold text-emerald-600 hover:underline">All Products &rarr;</a>
+            </div>
+            {% if dashboard.top_products %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                            <th class="pb-2">Product Name</th>
+                            <th class="pb-2 text-right">Units</th>
+                            <th class="pb-2 text-right">Sales</th>
+                            {% if is_owner %}
+                            <th class="pb-2 text-right">Profit</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                        {% for tp in dashboard.top_products %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-2.5 pr-2 font-semibold text-slate-900 truncate max-w-[180px]">{{ tp.product_name }}</td>
+                            <td class="py-2.5 text-right">{{ "{:,.0f}".format(tp.units_sold) }}</td>
+                            <td class="py-2.5 text-right font-semibold text-slate-900">₹{{ "{:,.2f}".format(tp.sales_amount) }}</td>
+                            {% if is_owner %}
+                            <td class="py-2.5 text-right text-emerald-600 font-semibold">₹{{ "{:,.2f}".format(tp.profit_amount or 0.0) }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500 py-6 text-center">No sales recorded today yet. Create your first bill!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Bills Table -->
+    <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-900">Recent Bills</h2>
+                <p class="text-xs text-slate-500">Quick list of recent transactions generated at counter</p>
+            </div>
+            <a href="/billing" class="text-xs font-semibold text-emerald-600 hover:underline">Create New Bill &rarr;</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                        <th class="pb-2">Bill No.</th>
+                        <th class="pb-2">Time</th>
+                        <th class="pb-2">Customer</th>
+                        <th class="pb-2">Payment</th>
+                        <th class="pb-2 text-right">Amount</th>
+                        <th class="pb-2 text-center">Status</th>
+                        <th class="pb-2 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for b in dashboard.recent_bills %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 font-bold text-emerald-700">{{ b.bill_number }}</td>
+                        <td class="py-3 text-slate-500">{{ b.time }}</td>
+                        <td class="py-3 font-semibold text-slate-900">{{ b.customer }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold {% if b.payment_method == 'CASH' %}bg-emerald-100 text-emerald-800{% elif b.payment_method == 'UPI' %}bg-blue-100 text-blue-800{% elif b.payment_method == 'CREDIT' %}bg-amber-100 text-amber-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                                {{ b.payment_method }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right font-bold text-slate-900">₹{{ "{:,.2f}".format(b.total_amount) }}</td>
+                        <td class="py-3 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if b.status == 'completed' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                                {{ b.status.upper() }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right space-x-2">
+                            <a href="/bill/{{ b.id }}/receipt" target="_blank" class="text-xs text-slate-600 hover:text-emerald-700 font-semibold underline">
+                                Print Receipt
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-6 text-center text-slate-500">No bills generated yet today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

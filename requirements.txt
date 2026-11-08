@@ -1,0 +1,30 @@
+# CARTIVANTA - Retail Intelligence & Predictive Commerce Platform
+# Core Data Engineering & Database
+pandas>=2.2.0
+numpy>=1.26.0
+openpyxl>=3.1.2
+xlrd>=2.0.1
+SQLAlchemy>=2.0.25
+psycopg2-binary>=2.9.9
+
+# Machine Learning & Analytics
+scikit-learn>=1.4.0
+scipy>=1.12.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# API / Workstation / Web UI
+fastapi>=0.110.0
+uvicorn>=0.28.0
+jinja2>=3.1.3
+python-multipart>=0.0.9
+pydantic>=2.6.0
+
+# Utilities & Configuration
+python-dotenv>=1.0.1
+rich>=13.7.0
+tqdm>=4.66.0
+
+# Testing & Quality
+pytest>=8.0.0
+pytest-cov>=4.1.0

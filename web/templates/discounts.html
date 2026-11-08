@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Discounts & Offers</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Manage special prices, festive discounts, and customer savings for your shop</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="openDiscountModal()" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Create Discount</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 5 Clean Overview Metrics Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Offers</span>
+            <div class="text-2xl font-bold text-emerald-700 mt-1">{{ overview.active_discounts }}</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Ready for checkout</p>
+        </div>
+
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scheduled</span>
+            <div class="text-2xl font-bold text-amber-600 mt-1">{{ overview.scheduled_discounts }}</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Upcoming promotions</p>
+        </div>
+
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Expired</span>
+            <div class="text-2xl font-bold text-slate-600 mt-1">{{ overview.expired_discounts }}</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Past offers archived</p>
+        </div>
+
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Savings Given</span>
+            <div class="text-2xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(overview.total_discount_given) }}</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Customer savings to date</p>
+        </div>
+
+        <div class="card p-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Products on Offer</span>
+            <div class="text-2xl font-bold text-teal-700 mt-1">{{ overview.products_on_offer_count }}</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Eligible items</p>
+        </div>
+    </div>
+
+    <!-- Discounts List Table -->
+    <div class="card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
+            <div>
+                <h2 class="text-base font-bold text-slate-900">All Discount Offers</h2>
+                <p class="text-xs text-slate-500">Active offers are automatically available on the Billing counter.</p>
+            </div>
+            <div class="w-full sm:w-64">
+                <input type="text" id="discount-search" oninput="filterDiscounts()" placeholder="Search offer by name..." class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus:bg-white transition">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs" id="discounts-table">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
+                        <th class="pb-2.5">Offer Name</th>
+                        <th class="pb-2.5">Discount Value</th>
+                        <th class="pb-2.5">Applies To</th>
+                        <th class="pb-2.5">Validity Period</th>
+                        <th class="pb-2.5">Conditions</th>
+                        <th class="pb-2.5">Status</th>
+                        <th class="pb-2.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for d in discounts %}
+                    <tr class="hover:bg-slate-50 transition discount-row">
+                        <td class="py-3 pr-2">
+                            <div class="font-bold text-slate-900 text-sm offer-name">{{ d.name }}</div>
+                            {% if d.description %}
+                            <div class="text-[11px] text-slate-500 truncate max-w-xs">{{ d.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 pr-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded font-bold text-xs {% if d.discount_type == 'percentage' %}bg-teal-50 text-teal-800 border border-teal-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                                {{ d.value_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 pr-2 text-slate-700">
+                            {{ d.applies_to_display }}
+                        </td>
+                        <td class="py-3 pr-2 text-slate-600 font-mono text-[11px]">
+                            {{ d.start_date }} &rarr; {{ d.end_date }}
+                        </td>
+                        <td class="py-3 pr-2 text-slate-500 text-[11px]">
+                            {% if d.min_bill_amount > 0 %}
+                            <div>Min bill: ₹{{ "{:,.2f}".format(d.min_bill_amount) }}</div>
+                            {% endif %}
+                            {% if d.max_discount_amount %}
+                            <div>Max cap: ₹{{ "{:,.2f}".format(d.max_discount_amount) }}</div>
+                            {% endif %}
+                            {% if d.min_bill_amount == 0 and not d.max_discount_amount %}
+                            <span class="text-slate-400">None</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 pr-2">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold {{ d.badge_class }}">
+                                {{ d.status }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right space-x-2">
+                            <button onclick="toggleDiscount({{ d.id }})" class="text-xs font-semibold text-slate-600 hover:text-slate-900 underline">
+                                {% if d.is_active %}Disable{% else %}Enable{% endif %}
+                            </button>
+                            <button onclick="deleteDiscount({{ d.id }}, '{{ d.name }}')" class="text-xs font-semibold text-rose-600 hover:text-rose-800 underline">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-400">
+                            No discount offers created yet. Click "+ Create Discount" above to set up your first offer!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Create Discount Modal -->
+<div id="discount-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <div>
+                <h3 class="font-bold text-slate-900 text-base">Create Discount Offer</h3>
+                <p class="text-xs text-slate-500">Configure customer savings and valid dates</p>
+            </div>
+            <button onclick="closeDiscountModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="create-discount-form" onsubmit="submitDiscount(event)" class="space-y-3.5 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Discount Name *</label>
+                <input type="text" id="disc-name" required placeholder="e.g. Diwali Special, Weekend Offer, Clearance Sale" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Discount Type *</label>
+                    <select id="disc-type" onchange="updateTypeLabels()" class="w-full p-2 border border-slate-300 rounded-lg font-medium">
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (₹)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1" id="disc-val-label">Discount Value (%) *</label>
+                    <input type="number" id="disc-val" required min="0.1" step="0.1" placeholder="e.g. 10 or 50" class="w-full p-2 border border-slate-300 rounded-lg font-bold">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Applies To *</label>
+                <select id="disc-applies" onchange="handleAppliesChange()" class="w-full p-2 border border-slate-300 rounded-lg font-medium">
+                    <option value="entire_bill">Entire Bill (Total Purchase)</option>
+                    <option value="category">Specific Product Category</option>
+                    <option value="product">Specific Single Product</option>
+                </select>
+            </div>
+
+            <!-- Conditional Product selector -->
+            <div id="product-select-group" class="hidden">
+                <label class="block font-semibold text-slate-700 mb-1">Select Target Product *</label>
+                <select id="disc-target-product" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <option value="">-- Choose Product --</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }} (₹{{ p.selling_price }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Conditional Category selector -->
+            <div id="category-select-group" class="hidden">
+                <label class="block font-semibold text-slate-700 mb-1">Select Target Category *</label>
+                <select id="disc-target-category" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <option value="">-- Choose Category --</option>
+                    {% for c in categories %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Minimum Bill Amount (₹)</label>
+                    <input type="number" id="disc-min-bill" min="0" step="10" placeholder="Optional (e.g. 500)" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Max Discount Cap (₹)</label>
+                    <input type="number" id="disc-max-cap" min="0" step="10" placeholder="Optional (e.g. 200)" class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Start Date *</label>
+                    <input type="date" id="disc-start" required class="w-full p-2 border border-slate-300 rounded-lg font-mono">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">End Date *</label>
+                    <input type="date" id="disc-end" required class="w-full p-2 border border-slate-300 rounded-lg font-mono">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Offer Description (Optional)</label>
+                <textarea id="disc-desc" rows="2" placeholder="e.g. Special festive celebration discount for customers" class="w-full p-2 border border-slate-300 rounded-lg"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeDiscountModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition">
+                    Save Discount
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openDiscountModal() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('disc-start').value = today;
+        
+        // default 14 days
+        const nextTwoWeeks = new Date();
+        nextTwoWeeks.setDate(nextTwoWeeks.getDate() + 14);
+        document.getElementById('disc-end').value = nextTwoWeeks.toISOString().split('T')[0];
+
+        document.getElementById('discount-modal').classList.remove('hidden');
+        document.getElementById('disc-name').focus();
+    }
+
+    function closeDiscountModal() {
+        document.getElementById('discount-modal').classList.add('hidden');
+        document.getElementById('create-discount-form').reset();
+        handleAppliesChange();
+    }
+
+    function updateTypeLabels() {
+        const type = document.getElementById('disc-type').value;
+        const label = document.getElementById('disc-val-label');
+        if (type === 'percentage') {
+            label.innerText = 'Discount Value (%) *';
+            document.getElementById('disc-val').max = '100';
+            document.getElementById('disc-val').placeholder = 'e.g. 10 or 15';
+        } else {
+            label.innerText = 'Discount Value (₹) *';
+            document.getElementById('disc-val').removeAttribute('max');
+            document.getElementById('disc-val').placeholder = 'e.g. 50 or 100';
+        }
+    }
+
+    function handleAppliesChange() {
+        const val = document.getElementById('disc-applies').value;
+        const prodGroup = document.getElementById('product-select-group');
+        const catGroup = document.getElementById('category-select-group');
+
+        if (val === 'product') {
+            prodGroup.classList.remove('hidden');
+            catGroup.classList.add('hidden');
+        } else if (val === 'category') {
+            prodGroup.classList.add('hidden');
+            catGroup.classList.remove('hidden');
+        } else {
+            prodGroup.classList.add('hidden');
+            catGroup.classList.add('hidden');
+        }
+    }
+
+    async function submitDiscount(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('disc-name').value.trim();
+        const discount_type = document.getElementById('disc-type').value;
+        const discount_value = parseFloat(document.getElementById('disc-val').value);
+        const applies_to = document.getElementById('disc-applies').value;
+        const start_date = document.getElementById('disc-start').value;
+        const end_date = document.getElementById('disc-end').value;
+        const min_bill_amount = parseFloat(document.getElementById('disc-min-bill').value) || 0.0;
+        const max_discount_amount = parseFloat(document.getElementById('disc-max-cap').value) || null;
+        const description = document.getElementById('disc-desc').value.trim();
+
+        let target_product_id = null;
+        let target_category_id = null;
+
+        if (applies_to === 'product') {
+            target_product_id = parseInt(document.getElementById('disc-target-product').value) || null;
+            if (!target_product_id) {
+                alert("Please select a target product.");
+                return;
+            }
+        } else if (applies_to === 'category') {
+            target_category_id = parseInt(document.getElementById('disc-target-category').value) || null;
+            if (!target_category_id) {
+                alert("Please select a target category.");
+                return;
+            }
+        }
+
+        if (discount_type === 'percentage' && (discount_value <= 0 || discount_value > 100)) {
+            alert("Percentage discount must be between 0.1% and 100%.");
+            return;
+        }
+
+        if (end_date < start_date) {
+            alert("End date cannot be earlier than start date.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/discounts/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    discount_type,
+                    discount_value,
+                    applies_to,
+                    target_product_id,
+                    target_category_id,
+                    min_bill_amount,
+                    max_discount_amount,
+                    start_date,
+                    end_date,
+                    is_active: true,
+                    description
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to create discount.");
+                return;
+            }
+
+            closeDiscountModal();
+            window.location.reload();
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    async function toggleDiscount(id) {
+        try {
+            const res = await fetch(`/api/discounts/${id}/toggle`, { method: 'POST' });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Could not update discount status.");
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    async function deleteDiscount(id, name) {
+        if (!confirm(`Are you sure you want to delete discount offer '${name}'?`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Could not delete discount offer.");
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    function filterDiscounts() {
+        const q = document.getElementById('discount-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.discount-row');
+        rows.forEach(r => {
+            const name = r.querySelector('.offer-name').innerText.toLowerCase();
+            r.style.display = name.includes(q) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

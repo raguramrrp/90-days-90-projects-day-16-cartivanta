@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Business Reports & Analytics</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Transparent sales reports, top-performing products, and payment channel insights</p>
+        </div>
+        <div class="mt-3 sm:mt-0 flex items-center space-x-2.5">
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-sm transition space-x-1.5 no-print">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                <span>Print Report</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Reports Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="card p-4 border-l-4 border-l-emerald-600">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Total Sales Billed</span>
+            <div class="text-2xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(report_data.total_sales) }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">{{ report_data.bills_count }} total bills</p>
+        </div>
+        <div class="card p-4 border-l-4 border-l-teal-600">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Gross Profit Earned</span>
+            <div class="text-2xl font-bold text-teal-700 mt-1">₹{{ "{:,.2f}".format(report_data.gross_profit) }}</div>
+            <p class="text-[11px] text-teal-600 font-semibold mt-0.5">{{ report_data.gross_margin_pct }}% Average Margin</p>
+        </div>
+        <div class="card p-4 border-l-4 border-l-blue-600">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Average Bill Value</span>
+            <div class="text-2xl font-bold text-slate-900 mt-1">₹{{ "{:,.2f}".format(report_data.avg_bill_value) }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Per customer visit</p>
+        </div>
+        <div class="card p-4 border-l-4 border-l-rose-500">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Outstanding Udhaar</span>
+            <div class="text-2xl font-bold text-rose-600 mt-1">₹{{ "{:,.2f}".format(report_data.total_udhaar) }}</div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Customer credit balance</p>
+        </div>
+    </div>
+
+    <!-- Product Performance Ranking: Revenue vs Profit -->
+    <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-900">Product Profitability & Volume Performance</h2>
+                <p class="text-xs text-slate-500">Real calculation of sales volume, purchase cost, and actual earned profit</p>
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 rounded text-slate-700">Ranked by Sales</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
+                        <th class="pb-2.5">Product Name</th>
+                        <th class="pb-2.5 text-right">Units Sold</th>
+                        <th class="pb-2.5 text-right">Selling Price (₹)</th>
+                        <th class="pb-2.5 text-right">Cost Price (₹)</th>
+                        <th class="pb-2.5 text-right">Total Sales (₹)</th>
+                        <th class="pb-2.5 text-right">Total Profit (₹)</th>
+                        <th class="pb-2.5 text-right">Margin %</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for p in report_data.product_rankings %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-2.5 font-bold text-slate-900">{{ p.name }}</td>
+                        <td class="py-2.5 text-right font-bold text-slate-800">{{ "{:,.0f}".format(p.units_sold) }}</td>
+                        <td class="py-2.5 text-right text-slate-600">₹{{ "{:,.2f}".format(p.selling_price) }}</td>
+                        <td class="py-2.5 text-right text-slate-600">₹{{ "{:,.2f}".format(p.purchase_cost) }}</td>
+                        <td class="py-2.5 text-right font-bold text-slate-900">₹{{ "{:,.2f}".format(p.sales_total) }}</td>
+                        <td class="py-2.5 text-right font-bold text-emerald-700">₹{{ "{:,.2f}".format(p.profit_total) }}</td>
+                        <td class="py-2.5 text-right font-semibold text-emerald-600">{{ p.margin_pct }}%</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="py-6 text-center text-slate-500">No product sales recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Category Sales Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-5">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Sales by Category</h3>
+            <div class="space-y-3 text-xs">
+                {% for cat in report_data.category_sales %}
+                <div>
+                    <div class="flex justify-between font-bold text-slate-800 mb-1">
+                        <span>{{ cat.category }}</span>
+                        <span>₹{{ "{:,.2f}".format(cat.sales) }} ({{ cat.pct }}%)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-emerald-600 h-2 rounded-full" style="width: {{ cat.pct }}%"></div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-slate-400 py-3 text-center">No category data yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card p-5">
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Payment Channel Collection</h3>
+            <div class="space-y-3 text-xs">
+                {% for pm in report_data.payment_channels %}
+                <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-slate-900 block">{{ pm.method }}</span>
+                        <span class="text-[11px] text-slate-500">{{ pm.bill_count }} transactions</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-base font-bold text-slate-900 block">₹{{ "{:,.2f}".format(pm.amount) }}</span>
+                        <span class="text-[11px] font-semibold text-emerald-700">{{ pm.share_pct }}% of total</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

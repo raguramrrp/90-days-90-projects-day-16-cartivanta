@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Diwali & Festive Campaign Manager</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Design seasonal festival discount offers, track uplift, and protect profit margins</p>
+        </div>
+        <div class="mt-3 sm:mt-0 flex items-center space-x-2.5">
+            <button onclick="openCampaignModal()" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>Create Festive Offer</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Festive Campaigns Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {% for camp in campaigns %}
+        <div class="card p-5 border-t-4 {% if camp.festival_type == 'Diwali' %}border-t-amber-500 bg-amber-50/20{% else %}border-t-emerald-600 bg-emerald-50/20{% endif %} flex flex-col justify-between">
+            <div>
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                              {% if camp.festival_type == 'Diwali' %}bg-amber-100 text-amber-800 border border-amber-300
+                              {% else %}bg-emerald-100 text-emerald-800 border border-emerald-300{% endif %}">
+                            {{ camp.festival_type }} Festival
+                        </span>
+                        <h2 class="text-base font-bold text-slate-900 mt-1.5">{{ camp.name }}</h2>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-extrabold {% if camp.festival_type == 'Diwali' %}text-amber-700{% else %}text-emerald-700{% endif %}">
+                            {{ camp.discount_percentage }}%
+                        </span>
+                        <span class="text-[10px] text-slate-500 block uppercase font-bold">Flat Discount</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 mt-2">{{ camp.description or "Festival special offer across eligible store categories." }}</p>
+
+                <div class="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div>Target Category: <strong class="text-slate-900">{{ camp.target_category }}</strong></div>
+                    <div>Valid: <strong class="text-slate-900">{{ camp.start_date }} to {{ camp.end_date }}</strong></div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    Active Campaign
+                </span>
+                <a href="/billing" class="text-xs font-bold text-emerald-700 hover:underline">Apply at Billing &rarr;</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-2 card p-8 text-center text-slate-500">
+            No active festive offers configured. Click "Create Festive Offer" to launch a campaign!
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- Create Campaign Modal -->
+<div id="campaign-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+            <h3 class="font-bold text-slate-900 text-base">Create Festive Campaign</h3>
+            <button onclick="closeCampaignModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="campaign-form" onsubmit="handleCampaignSubmit(event)" class="space-y-3 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Campaign Title *</label>
+                <input type="text" id="cmp-name" required placeholder="e.g. Diwali Sweets & Ghee Dhamaka" class="w-full p-2 border border-slate-300 rounded-lg">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Festival Type *</label>
+                    <select id="cmp-type" class="w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        <option value="Diwali">Diwali (Deepavali)</option>
+                        <option value="Pongal">Pongal / Sankranti</option>
+                        <option value="Eid">Eid</option>
+                        <option value="Christmas">Christmas / New Year</option>
+                        <option value="Regional">Regional / Custom Festive Sale</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Discount % *</label>
+                    <input type="number" step="1" min="1" max="50" id="cmp-disc" value="10" required class="w-full p-2 border border-slate-300 rounded-lg font-bold">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Target Category *</label>
+                <select id="cmp-cat" class="w-full p-2 border border-slate-300 rounded-lg bg-white">
+                    <option value="All">All Categories</option>
+                    {% for c in categories %}
+                    <option value="{{ c.name }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Start Date *</label>
+                    <input type="date" id="cmp-start" required class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">End Date *</label>
+                    <input type="date" id="cmp-end" required class="w-full p-2 border border-slate-300 rounded-lg">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Description / Banner Text</label>
+                <textarea id="cmp-desc" rows="2" placeholder="e.g. Special offers on desi ghee, dry fruits and cooking oils" class="w-full p-2 border border-slate-300 rounded-lg"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-200">
+                <button type="button" onclick="closeCampaignModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm">
+                    Launch Campaign
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openCampaignModal() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('cmp-start').value = today;
+        document.getElementById('campaign-modal').classList.remove('hidden');
+    }
+
+    function closeCampaignModal() {
+        document.getElementById('campaign-modal').classList.add('hidden');
+    }
+
+    async function handleCampaignSubmit(e) {
+        e.preventDefault();
+        const payload = {
+            name: document.getElementById('cmp-name').value.trim(),
+            festival_type: document.getElementById('cmp-type').value,
+            discount_percentage: parseFloat(document.getElementById('cmp-disc').value),
+            target_category: document.getElementById('cmp-cat').value,
+            start_date: document.getElementById('cmp-start').value,
+            end_date: document.getElementById('cmp-end').value,
+            description: document.getElementById('cmp-desc').value.trim()
+        };
+
+        try {
+            const res = await fetch('/api/campaigns/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.detail || "Failed to create campaign.");
+                return;
+            }
+            alert("Festive Campaign launched successfully!");
+            window.location.reload();
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+</script>
+{% endblock %}
